@@ -6,13 +6,16 @@ public class SSPRRenderFeature : ScriptableRendererFeature
 {
     class SSPRRenderPass : ScriptableRenderPass
     {
+        private SSPRRenderData ssprRenderData;
+        private SSPRCSDispatchData ssprCSDispatchData;
         public SSPRRenderPass(RenderPassEvent passEvent)
         {
             renderPassEvent = passEvent;
         }
-        public void Step(SSPRRenderData data)
+        public void Setup(SSPRRenderData renderData, SSPRCSDispatchData dispatchData)
         {
-
+            ssprRenderData = renderData;
+            ssprCSDispatchData = dispatchData;
         }
         // This method is called before executing the render pass.
         // It can be used to configure render targets and their clear state. Also to create temporary render target textures.
@@ -21,6 +24,7 @@ public class SSPRRenderFeature : ScriptableRendererFeature
         // The render pipeline will ensure target setup and clearing happens in a performant manner.
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
+
         }
 
         // Here you can implement the rendering logic.
@@ -29,11 +33,13 @@ public class SSPRRenderFeature : ScriptableRendererFeature
         // You don't have to call ScriptableRenderContext.submit, the render pipeline will call it at specific points in the pipeline.
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
+            
         }
 
         // Cleanup any allocated resources that were created during the execution of this render pass.
         public override void OnCameraCleanup(CommandBuffer cmd)
         {
+            
         }
     }
     // ========================================================================================================
@@ -73,6 +79,17 @@ public class SSPRRenderFeature : ScriptableRendererFeature
     }
     private SSPRRenderData ssprRenderData;
     // 用于执行SSPRCS的数据
+    public class SSPRCSDispatchData
+    {
+        public int ClearKernelHandle;
+        public int SSPRKernelHandle;
+        public int FillHoleKernelHandle;
+        public uint[] BufferDatas;
+        public RenderTextureDescriptor SSPRResult;
+        public int threadGroupsX;
+        public int threadGroupsY;
+    }
+    private SSPRCSDispatchData ssprCSDispatchData;
     /// <inheritdoc/>
     public override void Create()
     {
@@ -85,16 +102,17 @@ public class SSPRRenderFeature : ScriptableRendererFeature
     {
         if (SSPRCS == null) return;
         ssprRenderData = new SSPRRenderData();
-        SetSSPRRenderData(ref ssprRenderData, ref renderingData);
-        m_ScriptablePass.Step(ssprRenderData);
+        SetSSPRRenderData(renderingData, ref ssprRenderData);
+        ssprCSDispatchData = new SSPRCSDispatchData();
+        SetSSPRCSDispatchData(ssprRenderData, ref ssprCSDispatchData);
+        m_ScriptablePass.Setup(ssprRenderData, ssprCSDispatchData);
         renderer.EnqueuePass(m_ScriptablePass);
     }
 
     // 设置SSPR渲染所需要的的数据
-    private void SetSSPRRenderData(ref SSPRRenderData data, ref RenderingData renderingData)
+    private void SetSSPRRenderData(RenderingData renderingData, ref SSPRRenderData data)
     {
         data.SSPRCS = SSPRCS;
-
         data.SSPRParam1.x = renderingData.cameraData.cameraTargetDescriptor.width;
         data.SSPRParam1.y = renderingData.cameraData.cameraTargetDescriptor.height;
         data.SSPRParam1.z = waterHeight;
@@ -112,6 +130,23 @@ public class SSPRRenderFeature : ScriptableRendererFeature
         Matrix4x4 viewProjectionMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false) * camera.worldToCameraMatrix;
         data.viewProjectionMatrix = viewProjectionMatrix;
         data.inverseViewProjectionMatrix = viewProjectionMatrix.inverse;
+    }
+
+    public void SetSSPRCSDispatchData(SSPRRenderData renderData, ref SSPRCSDispatchData dispatchData)
+    {
+        dispatchData.ClearKernelHandle = renderData.SSPRCS.FindKernel("Clear");
+        dispatchData.SSPRKernelHandle = renderData.SSPRCS.FindKernel("SSPR");
+        dispatchData.FillHoleKernelHandle = renderData.SSPRCS.FindKernel("FillHole");
+        
+        int width = (int)(renderData.SSPRParam1.x / renderData.SSPRParam1.w);
+        int height = (int)(renderData.SSPRParam1.y / renderData.SSPRParam1.w);
+        dispatchData.BufferDatas = new uint[width * height];
+
+        dispatchData.SSPRResult = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32);
+        dispatchData.SSPRResult.enableRandomWrite = true;
+
+        dispatchData.threadGroupsX = Mathf.CeilToInt(width / 8);
+        dispatchData.threadGroupsY = Mathf.CeilToInt(height / 8);
     }
 }
 
