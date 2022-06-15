@@ -49,7 +49,7 @@ public class SSPRRenderFeature : ScriptableRendererFeature
             this.textureSetting = textureSetting;
 
             ssprRenderData = new SSPRRenderData();
-            ssprRenderData.SSPRParam1Id = Shader.PropertyToID("_SSPRParam");
+            ssprRenderData.SSPRParam1Id = Shader.PropertyToID("_SSPRParam1");
             ssprRenderData.SSPRParam2Id = Shader.PropertyToID("_SSPRParam2");
             ssprRenderData.viewProjectionMatrixId = Shader.PropertyToID("_ViewProjectionMatrix");
             ssprRenderData.inverseViewProjectionMatrixId = Shader.PropertyToID("_InverseViewProjectionMatrix");

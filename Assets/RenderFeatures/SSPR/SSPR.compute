@@ -11,14 +11,14 @@
 Texture2D<float4> _SSPRResultInput; // 用作模糊
 Texture2D<float4> _CameraDepthTexture;
 Texture2D<float4> _CameraOpaqueTexture;
-float4 _SSPRParam;
+float4 _SSPRParam1;
 float4 _SSPRParam2;
 float4x4 _ViewProjectionMatrix;
 float4x4 _InverseViewProjectionMatrix;
 
-#define _TextureSize float4(1.0 / _SSPRParam.x, 1.0 / _SSPRParam.y, _SSPRParam.xy)
-#define _WaterHeight _SSPRParam.z
-#define _SampleOffset _SSPRParam.w
+#define _TextureSize float4(1.0 / _SSPRParam1.x, 1.0 / _SSPRParam1.y, _SSPRParam1.xy)
+#define _WaterHeight _SSPRParam1.z
+#define _SampleOffset _SSPRParam1.w
 #define _FillHoleDst 3
 #define _StretchIntensity _SSPRParam2.x
 #define _StretchThreshold _SSPRParam2.y
