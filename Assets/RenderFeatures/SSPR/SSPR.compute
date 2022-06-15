@@ -3,6 +3,7 @@
 #pragma kernel FillHole
 #pragma kernel GaussianBlur
 
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 // TODO: 关于兼容之后在做
 #define MAXUINT 0xFFFFFFFF
@@ -26,6 +27,7 @@ float4x4 _InverseViewProjectionMatrix;
 // 输出结果
 RWStructuredBuffer<uint> SSPRBuffer;
 RWTexture2D<float4> SSPRResult;
+RWTexture2D<uint> SSPRBufferTex;
 // ===============================================
 // 二维坐标转换成一维坐标
 uint GetIndex(uint2 id)
@@ -45,9 +47,10 @@ uint2 Decode(uint encode)
 // 获得世界坐标
 float3 GetWorldPositionFromDepth(float depth, float2 uv)
 {
-    #if defined(SHADER_API_GLCORE) || defined (SHADER_API_GLES) || defined (SHADER_API_GLES3)
-        depth = depth * 2 - 1;
-    #endif
+#if defined(SHADER_API_GLCORE) || defined (SHADER_API_GLES) || defined (SHADER_API_GLES3)
+    depth = depth * 2 - 1;
+#endif
+    uv.y = 1 - uv.y;
     float4 positionCS = float4(uv * 2.0 - 1.0, depth, 1);
     float4 positionWS = mul(_InverseViewProjectionMatrix, positionCS);
     positionWS.xyz /= positionWS.w;
@@ -59,14 +62,16 @@ uint GetNearbyBuffer(uint2 id, int2 offset)
     uint2 nearbyID = id + offset;
     nearbyID.x = clamp(nearbyID.x, 0, _TextureSize.z);
     nearbyID.y = clamp(nearbyID.y, 0, _TextureSize.w);
-    return SSPRBuffer[GetIndex(nearbyID)];
+    return SSPRBufferTex[nearbyID];
+    // return SSPRBuffer[GetIndex(nearbyID)];
 }
 // ===============================================
 // 反射前清除贴图和缓存
 [numthreads(8, 8, 1)]
 void Clear (uint3 id : SV_DispatchThreadID)
 {
-    SSPRBuffer[GetIndex(id.xy)] = MAXUINT;
+    // SSPRBuffer[GetIndex(id.xy)] = MAXUINT;
+    SSPRBufferTex[id.xy] = MAXUINT;
     SSPRResult[id.xy] = 0;
 }
 // 进行屏幕空间反射计算
@@ -76,14 +81,14 @@ void SSPR (uint3 id : SV_DispatchThreadID)
     half2 uv = id.xy * _TextureSize.xy;
     half sampleDepth = _CameraDepthTexture[id.xy * _SampleOffset].r;
     float3 positionWS = GetWorldPositionFromDepth(sampleDepth, uv);
-    // if (Linear01Depth(sampleDepth) > 0.6) return;
+    if (Linear01Depth(sampleDepth, _ZBufferParams) > 0.9) return;
     // SSPRResult[id.xy] = float4(positionWS, 1);
-    if (positionWS.y > (_WaterHeight - 0.2) && sampleDepth > 0.0001)
+    if (positionWS.y > _WaterHeight && sampleDepth > 0.0001)
     {
         float4 positionRWS = float4(positionWS.x, 2 * _WaterHeight - positionWS.y, positionWS.z, 1);
         float4 positionRCS = mul(_ViewProjectionMatrix, positionRWS);
-        float4 screenPos = positionRCS;// TODO: ComputeScreenPos(positionRCS);
-        float2 reflectUV = screenPos.xy / screenPos.w;
+        float4 positionSS = ComputeScreenPos(positionRCS);
+        float2 reflectUV = positionSS.xy / positionSS.w;
         // 伸展uv
         reflectUV.x = reflectUV.x * 2.0 - 1.0;
 	    float HeightStretch = positionWS.y - _WaterHeight;
@@ -95,15 +100,17 @@ void SSPR (uint3 id : SV_DispatchThreadID)
         uint2 reflectID = uint2(reflectUV * _TextureSize.zw);
         uint reflectIndex = GetIndex(reflectID);
         uint encodeID = Encode(id.xy);
-        InterlockedMin(SSPRBuffer[reflectIndex], encodeID);
-        // SSPRResult[id.xy] = float4(reflectUV, 1, 1);
+        // InterlockedMin(SSPRBuffer[reflectIndex], encodeID);
+        InterlockedMin(SSPRBufferTex[reflectID], encodeID);
+        // SSPRResult[reflectID] = float4(_CameraOpaqueTexture[id.xy].rgb, 1);
     }
 }
 // 填补漏洞
 [numthreads(8, 8, 1)]
 void FillHole (uint3 id : SV_DispatchThreadID)
 {
-    uint encodeID = SSPRBuffer[GetIndex(id.xy)];
+    // uint encodeID = SSPRBuffer[GetIndex(id.xy)];
+    uint encodeID = SSPRBufferTex[id.xy];
     uint upperBuffer = GetNearbyBuffer(id.xy, int2(0, 1));
     uint underBuffer = GetNearbyBuffer(id.xy, int2(0, -1));
     uint leftBuffer = GetNearbyBuffer(id.xy, int2(-1, 0));
@@ -125,7 +132,7 @@ void FillHole (uint3 id : SV_DispatchThreadID)
         encodeID = minBuffer;
     }
     float alpha = smoothstep(1, _FadeAdjust, decodeID.y * _TextureSize.y); // max(abs(decodeID.x * _TextureSize.x * 2 - 1), decodeID.y * _TextureSize.y)
-    SSPRResult[id.xy] = encodeID != MAXUINT ? float4(_CameraColorTexture[decodeID * _SampleOffset].rgb, alpha) : 0;
+    SSPRResult[id.xy] = encodeID != MAXUINT ? float4(_CameraOpaqueTexture[decodeID * _SampleOffset].rgb, alpha) : 0;
     // SSPRResult[id.xy] = float4(decodeID * _TextureSize.xy, 1, 1);
 }
 

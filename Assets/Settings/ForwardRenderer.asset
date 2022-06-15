@@ -13,11 +13,10 @@ MonoBehaviour:
   m_Name: SSPR RenderFeature
   m_EditorClassIdentifier: 
   m_Active: 1
-  passEvent: 450
   SSPRCS: {fileID: 7200000, guid: 539f1f626fc549c47a338262a482561a, type: 3}
   waterHeight: 0
   textureSetting:
-    textureSize: 2
+    textureSize: 1
     stretchIntensity: 4.5
     stretchThreshold: 0.2
     fadeAdjust: 0.95
