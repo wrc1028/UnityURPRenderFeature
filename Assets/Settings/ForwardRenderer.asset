@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5e237faf5badac429ddc3196eed0b4a, type: 3}
-  m_Name: NewScreenSpacePlanarReflection
+  m_Name: ScreenSpacePlanarReflection
   m_EditorClassIdentifier: 
   m_Active: 1
   m_settings:
-    computeShader: {fileID: 7200000, guid: 539f1f626fc549c47a338262a482561a, type: 3}
+    computeShader: {fileID: 7200000, guid: 6c660a88628feda4697900e7c5b2a03e, type: 3}
     waterHeight: 0
     textureSize: 1
     stretchIntensity: 4.5
-    stretchThreshold: 0.2
+    stretchThreshold: 0.222
     fadeAdjust: 0.918
 --- !u!114 &-8170965695858061556
 MonoBehaviour:
@@ -32,7 +32,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19fff2966feb38f42b2da2e3ccc79356, type: 3}
   m_Name: SSPR RenderFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   SSPRCS: {fileID: 7200000, guid: 539f1f626fc549c47a338262a482561a, type: 3}
   waterHeight: 0
   textureSetting:

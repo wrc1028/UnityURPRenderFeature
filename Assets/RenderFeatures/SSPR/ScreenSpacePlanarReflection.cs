@@ -44,12 +44,24 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
     // ================= Render Pass =================
     class SSPRRenderPass : ScriptableRenderPass
     {
-        private readonly static int s_SSPRParam1Id = Shader.PropertyToID("_SSPRParam1");
-        private readonly static int s_SSPRParam2Id = Shader.PropertyToID("_SSPRParam2");
-        private readonly static int s_ViewProjectionMatrixId = Shader.PropertyToID("_ViewProjectionMatrix");
-        private readonly static int s_InverseViewProjectionMatrix = Shader.PropertyToID("_InverseViewProjectionMatrix");
+        private const string k_ProfilerTag = "ScreenSpacePlanarReflection";
+        private ProfilingSampler m_ProfilerSampler = new ProfilingSampler(k_ProfilerTag);
+        private const string k_SSPRParam1Id = "_SSPRParam1";
+        private const string k_SSPRParam2Id = "_SSPRParam2";
+        private const string k_ViewProjectionMatrixId = "_ViewProjectionMatrix";
+        private const string k_InverseViewProjectionMatrix = "_InverseViewProjectionMatrix";
+        private const string k_SSPRTextureBuffer = "_SSPRTextureBuffer";
+        private const string k_SSPRTextureReuslt = "_SSPRTextureResult";
+        // private readonly static int s_SSPRTextureBlurReusltId = Shader.PropertyToID("_SSPRTextureBlurReuslt");
+        private RenderTextureDescriptor m_SSPRTextureReusltDescriptor;
+        private RenderTextureDescriptor m_SSPRTextureBufferDescriptor;
+        
+        private RenderTargetHandle m_SSPRTextureResultHandle;
+        private RenderTargetHandle m_SSPRTextureBufferHandle;
         internal class DispatchDatas
         {
+            public int width;
+            public int height;
             public Vector4 param01;
             public Vector4 param02;
             public Matrix4x4 viewProjectionMatrix;
@@ -79,21 +91,51 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             SetSSPRDispatchDatas(renderingData, ref m_DispatchDatas);
+            int width = (int)m_DispatchDatas.param01.x;
+            int height = (int)m_DispatchDatas.param01.y;
+            m_SSPRTextureBufferDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.RInt);
+            m_SSPRTextureBufferDescriptor.enableRandomWrite = true;
+            m_SSPRTextureReusltDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32);
+            m_SSPRTextureReusltDescriptor.enableRandomWrite = true;
+
+            m_SSPRTextureBufferHandle.Init(k_SSPRTextureBuffer);
+            m_SSPRTextureResultHandle.Init(k_SSPRTextureReuslt);
+
+            cmd.GetTemporaryRT(m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferDescriptor, FilterMode.Point);
+            cmd.GetTemporaryRT(m_SSPRTextureResultHandle.id, m_SSPRTextureReusltDescriptor, FilterMode.Bilinear);
         }
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
-            
+            if (m_Settings.computeShader == null) return;
+            CommandBuffer cmd = CommandBufferPool.Get(k_ProfilerTag);
+            using (new ProfilingScope(cmd, m_ProfilerSampler))
+            {
+                cmd.SetComputeVectorParam(m_Settings.computeShader, k_SSPRParam1Id, m_DispatchDatas.param01);
+                cmd.SetComputeVectorParam(m_Settings.computeShader, k_SSPRParam2Id, m_DispatchDatas.param02);
+                cmd.SetComputeMatrixParam(m_Settings.computeShader, k_ViewProjectionMatrixId, m_DispatchDatas.viewProjectionMatrix);
+                cmd.SetComputeMatrixParam(m_Settings.computeShader, k_InverseViewProjectionMatrix, m_DispatchDatas.inverseViewProjectionMatrix);
+
+                cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
+                cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
+                cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
+            }
+            context.ExecuteCommandBuffer(cmd);
+            CommandBufferPool.Release(cmd);
         }
 
         public override void OnCameraCleanup(CommandBuffer cmd)
         {
+            cmd.ReleaseTemporaryRT(m_SSPRTextureBufferHandle.id);
+            cmd.ReleaseTemporaryRT(m_SSPRTextureResultHandle.id);
         }
         // 设置SSPR渲染所需要的的数据
         private void SetSSPRDispatchDatas(RenderingData renderingData, ref DispatchDatas data)
         {
-            data.param01.x = renderingData.cameraData.cameraTargetDescriptor.width;
-            data.param01.y = renderingData.cameraData.cameraTargetDescriptor.height;
+            int width = renderingData.cameraData.cameraTargetDescriptor.width;
+            int height = renderingData.cameraData.cameraTargetDescriptor.height;
+            data.param01.x = width / (int)m_Settings.textureSize;
+            data.param01.y = height / (int)m_Settings.textureSize;
             data.param01.z = m_Settings.waterHeight;
             data.param01.w = (float)m_Settings.textureSize; // TODO: 替换成两边模糊
 
@@ -109,6 +151,9 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
             Matrix4x4 viewProjectionMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, true) * camera.worldToCameraMatrix;
             data.viewProjectionMatrix = viewProjectionMatrix;
             data.inverseViewProjectionMatrix = viewProjectionMatrix.inverse;
+            
+            data.threadGroupsX = Mathf.CeilToInt(data.param01.x / 8f);
+            data.threadGroupsY = Mathf.CeilToInt(data.param01.y / 8f);
         }
     }
 }

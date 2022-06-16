@@ -1,0 +1,52 @@
+#pragma kernel Clear
+#pragma kernel SSPR
+#pragma kernel FillHole
+
+// input
+Texture2D<float4> _CameraDepthTexture;
+Texture2D<float4> _CameraColorTexture;
+float4 _SSPRParam1;
+float4 _SSPRParam2;
+float4x4 _ViewProjectionMatrix;
+float4x4 _InverseViewProjectionMatrix;
+// output
+RWBuffer<uint> _SSPRBuffer;
+RWTexture2D<float4> _SSPRTextureBuffer;
+RWTexture2D<float4> _SSPRTextureResult;
+// RWTexture2D<float4> _SSPRTextureBlurResult;
+// define
+#define _TextureSize float4(1.0 / _SSPRParam1.x, 1.0 / _SSPRParam1.y, _SSPRParam1.xy)
+#define _WaterHeight _SSPRParam1.z
+#define _SampleOffset _SSPRParam1.w
+#define _FillHoleDst 3
+#define _StretchIntensity _SSPRParam2.x
+#define _StretchThreshold _SSPRParam2.y
+#define _CameraDirY _SSPRParam2.z
+#define _FadeAdjust _SSPRParam2.w
+#define MAXUINT 0xFFFFFFFF
+
+// 二维坐标转换成一维坐标
+uint GetIndex(uint2 id)
+{
+    return id.y * _TextureSize.z + id.x;
+}
+
+[numthreads(8,8,1)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+    // _SSPRBuffer[GetIndex(id.xy)] = MAXUINT;
+    _SSPRTextureBuffer[id.xy] = MAXUINT;
+    _SSPRTextureResult[id.xy] = 1;
+}
+
+[numthreads(8,8,1)]
+void SSPR (uint3 id : SV_DispatchThreadID)
+{
+    
+}
+
+[numthreads(8,8,1)]
+void FillHole (uint3 id : SV_DispatchThreadID)
+{
+    
+}
