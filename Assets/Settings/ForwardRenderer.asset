@@ -15,11 +15,11 @@ MonoBehaviour:
   m_Active: 1
   m_settings:
     computeShader: {fileID: 7200000, guid: 6c660a88628feda4697900e7c5b2a03e, type: 3}
-    waterHeight: 0
-    textureSize: 1
-    stretchIntensity: 4.5
-    stretchThreshold: 0.222
-    fadeAdjust: 0.918
+    waterHeight: 0.06
+    textureSize: 2
+    stretchIntensity: 0
+    stretchThreshold: 0.158
+    fadeAdjust: 0.762
 --- !u!114 &-8170965695858061556
 MonoBehaviour:
   m_ObjectHideFlags: 0

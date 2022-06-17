@@ -14,7 +14,7 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
         [SerializeField] internal float waterHeight;
         [SerializeField] internal TextureSize textureSize = TextureSize.full;
         [Tooltip("边缘拉伸强度")]
-        [Range(0.0f, 20.0f)]
+        [Range(0.0f, 100.0f)]
         [SerializeField] internal float stretchIntensity = 4.5f;
         [Tooltip("边缘拉伸阈值")]
         [Range(0.0f, 0.5f)]
@@ -52,7 +52,7 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
         private const string k_InverseViewProjectionMatrix = "_InverseViewProjectionMatrix";
         private const string k_SSPRTextureBuffer = "_SSPRTextureBuffer";
         private const string k_SSPRTextureReuslt = "_SSPRTextureResult";
-        // private readonly static int s_SSPRTextureBlurReusltId = Shader.PropertyToID("_SSPRTextureBlurReuslt");
+        // private const string k_SSPRTextureBlurReuslt = "_SSPRTextureBlurReuslt";
         private RenderTextureDescriptor m_SSPRTextureReusltDescriptor;
         private RenderTextureDescriptor m_SSPRTextureBufferDescriptor;
         
@@ -115,10 +115,18 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
                 cmd.SetComputeVectorParam(m_Settings.computeShader, k_SSPRParam2Id, m_DispatchDatas.param02);
                 cmd.SetComputeMatrixParam(m_Settings.computeShader, k_ViewProjectionMatrixId, m_DispatchDatas.viewProjectionMatrix);
                 cmd.SetComputeMatrixParam(m_Settings.computeShader, k_InverseViewProjectionMatrix, m_DispatchDatas.inverseViewProjectionMatrix);
-
+                // Clear
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
                 cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
+                // SSPR
+                cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
+                // cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
+                cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
+                // FillHole
+                cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
+                cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
+                cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
             }
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);

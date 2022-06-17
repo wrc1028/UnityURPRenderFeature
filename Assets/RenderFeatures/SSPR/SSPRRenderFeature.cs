@@ -100,7 +100,7 @@ public class SSPRRenderFeature : ScriptableRendererFeature
                 cmd.SetComputeTextureParam(ssprRenderData.SSPRCS, ssprCSDispatchData.FillHoleKernelHandle, ssprCSDispatchData.SSPRRenderTexture.id, ssprCSDispatchData.SSPRRenderTexture.Identifier());
                 cmd.DispatchCompute(ssprRenderData.SSPRCS, ssprCSDispatchData.FillHoleKernelHandle, ssprCSDispatchData.threadGroupsX, ssprCSDispatchData.threadGroupsY, 1);
 
-                cmd.SetGlobalTexture("_SSReflectionTexture", ssprCSDispatchData.SSPRRenderTexture.Identifier());
+                cmd.SetGlobalTexture("_SSPRTextureResult", ssprCSDispatchData.SSPRRenderTexture.Identifier());
             }
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
