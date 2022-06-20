@@ -12,11 +12,6 @@ float4 _SSPRParam1;
 float4 _SSPRParam2;
 float4x4 _ViewProjectionMatrix;
 float4x4 _InverseViewProjectionMatrix;
-// output
-RWBuffer<uint> _SSPRBuffer;
-RWTexture2D<uint> _SSPRTextureBuffer;
-RWTexture2D<float4> _SSPRTextureResult;
-// RWTexture2D<float4> _SSPRTextureBlurResult;
 // define
 #define _TextureSize float4(1.0 / _SSPRParam1.x, 1.0 / _SSPRParam1.y, _SSPRParam1.xy)
 #define _WaterHeight _SSPRParam1.z
@@ -27,11 +22,26 @@ RWTexture2D<float4> _SSPRTextureResult;
 #define _FadeAdjust _SSPRParam2.w
 #define MAXUINT 0xFFFFFFFF
 #define FillHoleDst 10
+// output
+#if SHADER_API_METAL
+RWBuffer<uint> _SSPRBuffer;
+uint GetIndex(uint2 id) { return id.y * _TextureSize.z + id.x; }
+#define INDEX(id) GetIndex(id)
+#else
+RWTexture2D<uint> _SSPRBuffer;
+#define INDEX(id) id
+#endif
+
+RWTexture2D<float4> _SSPRTextureResult;
 
 [numthreads(8, 8, 1)]
 void Clear (uint3 id : SV_DispatchThreadID)
 {
-    _SSPRTextureBuffer[id.xy] = MAXUINT;
+#if UNITY_UV_STARTS_AT_TOP
+    _SSPRBuffer[INDEX(id.xy)] = MAXUINT;
+#else
+    _SSPRBuffer[INDEX(id.xy)] = 0;
+#endif
     _SSPRTextureResult[id.xy] = 0;
 }
 
@@ -61,7 +71,7 @@ uint2 Decode(uint encode)
 void SSPR (uint3 id : SV_DispatchThreadID)
 {
     half2 screenUV = (id.xy + 0.5) * _TextureSize.xy;
-    half sampleDepth = _CameraDepthTexture.SampleLevel(linearClampSampler, screenUV, 0).r;
+    half sampleDepth = _CameraDepthTexture[id.xy * _SampleOffset].r;
     if (Linear01Depth(sampleDepth, _ZBufferParams) > 0.95) return;
     
     float3 positionWS = GetWorldPositionFromDepth(sampleDepth, screenUV);
@@ -81,7 +91,11 @@ void SSPR (uint3 id : SV_DispatchThreadID)
         // limit min value
         uint2 reflectID = uint2(reflectUV * _TextureSize.zw);
         uint encodeID = Encode(id.xy);
-        InterlockedMin(_SSPRTextureBuffer[reflectID], encodeID);
+#if UNITY_UV_STARTS_AT_TOP
+        InterlockedMin(_SSPRBuffer[INDEX(reflectID)], encodeID);
+#else
+        InterlockedMax(_SSPRBuffer[INDEX(reflectID)], encodeID);
+#endif
     }
 }
 // 获得周围的坐标
@@ -90,35 +104,47 @@ uint GetNearbyBuffer(uint2 id, int2 offset)
     uint2 nearbyID = id + offset;
     nearbyID.x = clamp(nearbyID.x, 0, _TextureSize.z);
     nearbyID.y = clamp(nearbyID.y, 0, _TextureSize.w);
-    return _SSPRTextureBuffer[nearbyID];
+    return _SSPRBuffer[INDEX(nearbyID)];
 }
 [numthreads(8, 8, 1)]
 void FillHole (uint3 id : SV_DispatchThreadID)
 {
-    uint encodeID = _SSPRTextureBuffer[id.xy];
+    uint encodeCurrentID = _SSPRBuffer[INDEX(id.xy)];
     uint upperEncodeID = GetNearbyBuffer(id.xy, int2(0, 1));
     uint underEncodeID = GetNearbyBuffer(id.xy, int2(0, -1));
     uint leftEncodeID = GetNearbyBuffer(id.xy, int2(-1, 0));
     uint rightEncodeID = GetNearbyBuffer(id.xy, int2(1, 0));
-    uint minEncodeID = min(min(upperEncodeID, underEncodeID), min(leftEncodeID, rightEncodeID));
+#if UNITY_UV_STARTS_AT_TOP
+    uint targetEncodeID = min(min(upperEncodeID, underEncodeID), min(leftEncodeID, rightEncodeID));
+#else
+    uint targetEncodeID = max(max(upperEncodeID, underEncodeID), max(leftEncodeID, rightEncodeID));
+#endif
 
-    uint2 decodeCurrentID = Decode(encodeID);
-    uint2 decodeMinID = Decode(minEncodeID);
+    uint2 decodeCurrentID = Decode(encodeCurrentID);
+    uint2 decodeTargetID = Decode(targetEncodeID);
 
     bool isCanFillHole = true;
-    if (encodeID != MAXUINT)
+#if UNITY_UV_STARTS_AT_TOP
+    if (encodeCurrentID != MAXUINT)
+#else
+    if (encodeCurrentID != 0)
+#endif
     {
-        uint2 offset = decodeMinID - decodeCurrentID;
+        uint2 offset = decodeTargetID - decodeCurrentID;
         isCanFillHole = dot(offset, offset) < FillHoleDst * FillHoleDst;
     }
     if (isCanFillHole)
     {
-        decodeCurrentID = decodeMinID;
-        encodeID = minEncodeID;
+        decodeCurrentID = decodeTargetID;
+        encodeCurrentID = targetEncodeID;
     }
 
     half2 uv = (decodeCurrentID + 0.5) * _TextureSize.xy;
     half4 reflectionColor = _CameraOpaqueTexture.SampleLevel(linearClampSampler, uv, 0);
     half alpha = smoothstep(1, _FadeAdjust, decodeCurrentID.y * _TextureSize.y);
-    _SSPRTextureResult[id.xy] = encodeID == MAXUINT ? 0 : half4(reflectionColor.rgb, alpha);
+#if UNITY_UV_STARTS_AT_TOP
+    _SSPRTextureResult[id.xy] = encodeCurrentID == MAXUINT ? 0 : half4(reflectionColor.rgb, alpha);
+#else
+    _SSPRTextureResult[id.xy] = encodeCurrentID == 0 ? 0 : half4(reflectionColor.rgb, alpha);
+#endif
 }

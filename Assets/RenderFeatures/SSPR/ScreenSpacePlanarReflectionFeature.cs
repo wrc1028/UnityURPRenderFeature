@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class ScreenSpacePlanarReflection : ScriptableRendererFeature
+public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
 {
     [System.Serializable]
     internal class ScreenSpacePlanarReflectionSettings
@@ -50,14 +50,19 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
         private const string k_SSPRParam2Id = "_SSPRParam2";
         private const string k_ViewProjectionMatrixId = "_ViewProjectionMatrix";
         private const string k_InverseViewProjectionMatrix = "_InverseViewProjectionMatrix";
-        private const string k_SSPRTextureBuffer = "_SSPRTextureBuffer";
-        private const string k_SSPRTextureReuslt = "_SSPRTextureResult";
-        // private const string k_SSPRTextureBlurReuslt = "_SSPRTextureBlurReuslt";
-        private RenderTextureDescriptor m_SSPRTextureReusltDescriptor;
+        private const string k_SSPRBuffer = "_SSPRBuffer";
+        private const string k_SSPRTextureResult = "_SSPRTextureResult";
+#if UNITY_IOS
+        private ComputeBuffer m_SSPRBuffer;
+#else 
+        private RenderTextureDescriptor m_SSPRTextureResultDescriptor;
+#endif
         private RenderTextureDescriptor m_SSPRTextureBufferDescriptor;
         
         private RenderTargetHandle m_SSPRTextureResultHandle;
         private RenderTargetHandle m_SSPRTextureBufferHandle;
+
+        private ScreenSpacePlanarReflectionVolume m_SSPRVolume;
         internal class DispatchDatas
         {
             public int width;
@@ -93,16 +98,20 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
             SetSSPRDispatchDatas(renderingData, ref m_DispatchDatas);
             int width = (int)m_DispatchDatas.param01.x;
             int height = (int)m_DispatchDatas.param01.y;
+#if UNITY_IOS
+            m_SSPRBuffer = new ComputeBuffer(width * height, sizeof(uint), ComputeBufferType.Default);
+#else
             m_SSPRTextureBufferDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.RInt);
             m_SSPRTextureBufferDescriptor.enableRandomWrite = true;
-            m_SSPRTextureReusltDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32);
-            m_SSPRTextureReusltDescriptor.enableRandomWrite = true;
+#endif
+            m_SSPRTextureResultDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32);
+            m_SSPRTextureResultDescriptor.enableRandomWrite = true;
 
-            m_SSPRTextureBufferHandle.Init(k_SSPRTextureBuffer);
-            m_SSPRTextureResultHandle.Init(k_SSPRTextureReuslt);
+            m_SSPRTextureBufferHandle.Init(k_SSPRBuffer);
+            m_SSPRTextureResultHandle.Init(k_SSPRTextureResult);
 
             cmd.GetTemporaryRT(m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferDescriptor, FilterMode.Point);
-            cmd.GetTemporaryRT(m_SSPRTextureResultHandle.id, m_SSPRTextureReusltDescriptor, FilterMode.Bilinear);
+            cmd.GetTemporaryRT(m_SSPRTextureResultHandle.id, m_SSPRTextureResultDescriptor, FilterMode.Bilinear);
         }
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -116,15 +125,26 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
                 cmd.SetComputeMatrixParam(m_Settings.computeShader, k_ViewProjectionMatrixId, m_DispatchDatas.viewProjectionMatrix);
                 cmd.SetComputeMatrixParam(m_Settings.computeShader, k_InverseViewProjectionMatrix, m_DispatchDatas.inverseViewProjectionMatrix);
                 // Clear
+#if UNITY_IOS
+                cmd.SetComputeBufferParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, k_SSPRBuffer, m_SSPRBuffer); 
+#else
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
+#endif
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
                 cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
                 // SSPR
+#if UNITY_IOS
+                cmd.SetComputeBufferParam(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, k_SSPRBuffer, m_SSPRBuffer); 
+#else
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
-                // cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
+#endif
                 cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.SSPRKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
                 // FillHole
+#if UNITY_IOS
+                cmd.SetComputeBufferParam(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, k_SSPRBuffer, m_SSPRBuffer); 
+#else
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, m_SSPRTextureBufferHandle.id, m_SSPRTextureBufferHandle.Identifier());
+#endif
                 cmd.SetComputeTextureParam(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, m_SSPRTextureResultHandle.id, m_SSPRTextureResultHandle.Identifier());
                 cmd.DispatchCompute(m_Settings.computeShader, m_DispatchDatas.FillHoleKernelHandle, m_DispatchDatas.threadGroupsX, m_DispatchDatas.threadGroupsY, 1);
             }
@@ -134,7 +154,11 @@ public class ScreenSpacePlanarReflection : ScriptableRendererFeature
 
         public override void OnCameraCleanup(CommandBuffer cmd)
         {
+#if UNITY_IOS
+            m_SSPRBuffer.Release();
+#else
             cmd.ReleaseTemporaryRT(m_SSPRTextureBufferHandle.id);
+#endif
             cmd.ReleaseTemporaryRT(m_SSPRTextureResultHandle.id);
         }
         // 设置SSPR渲染所需要的的数据

@@ -41,7 +41,7 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
   skipIterations:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
     min: 0
     max: 16
@@ -88,6 +88,30 @@ MonoBehaviour:
   rounded:
     m_OverrideState: 0
     m_Value: 0
+--- !u!114 &-5665214217687955365
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97e149e4916db4c478ba7b3d1e64a46e, type: 3}
+  m_Name: ScreenSpacePlanarReflectionVolume
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  reflectionPlanesCount:
+    m_OverrideState: 1
+    m_Value: 1
+    min: 0
+    max: 4
+  reflectionPlanes:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!114 &-4133803099058146237
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -167,6 +191,7 @@ MonoBehaviour:
   - {fileID: -7893295128165547882}
   - {fileID: -7011558710299706105}
   - {fileID: -4133803099058146237}
+  - {fileID: -5665214217687955365}
 --- !u!114 &849379129802519247
 MonoBehaviour:
   m_ObjectHideFlags: 3

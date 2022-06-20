@@ -17,6 +17,7 @@ public class ZoomBlurRenderFeature : ScriptableRendererFeature
         private static readonly int FocusScreenPositonId = Shader.PropertyToID("_FocusScreenPositon");
         private static readonly int ReferenceResolutionXId = Shader.PropertyToID("_ReferenceResolutionX");
         private ZoomBlur zoomBlur;
+        private ScreenSpacePlanarReflectionVolume screenSpacePlanarReflectionVolume;
         private Material zoomBlurMat;
         // 一个描述RT的结构体
         private RenderTextureDescriptor m_TempTargetDescriptor;
@@ -74,6 +75,7 @@ public class ZoomBlurRenderFeature : ScriptableRendererFeature
             // 1、获得当前优先级最好的Volume组件下指定后处理实例, 获取里面的属性变量来做具体的后处理
             var stack = VolumeManager.instance.stack;
             zoomBlur = stack.GetComponent<ZoomBlur>();
+            screenSpacePlanarReflectionVolume = stack.GetComponent<ScreenSpacePlanarReflectionVolume>();
             if (zoomBlur == null || !zoomBlur.IsActive()) return;
             // 2、从命令缓存池中获取一个gl命令缓存(CommandBuffer), 用于收集一系列GL指令, 然后执行
             CommandBuffer zoomBlurBuffer = CommandBufferPool.Get(k_RenderTag);
