@@ -61,8 +61,6 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
         
         private RenderTargetHandle m_SSPRTextureResultHandle;
         private RenderTargetHandle m_SSPRTextureBufferHandle;
-
-        private ScreenSpacePlanarReflectionVolume m_SSPRVolume;
         internal class DispatchDatas
         {
             public int width;
@@ -105,6 +103,7 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
             m_SSPRTextureBufferDescriptor.enableRandomWrite = true;
 #endif
             m_SSPRTextureResultDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32);
+            
             m_SSPRTextureResultDescriptor.enableRandomWrite = true;
 
             m_SSPRTextureBufferHandle.Init(k_SSPRBuffer);
