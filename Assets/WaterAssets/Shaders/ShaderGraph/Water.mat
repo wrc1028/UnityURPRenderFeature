@@ -27,6 +27,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _WaveAdditionalNormal:
+        m_Texture: {fileID: 2800000, guid: 95356d722056e774c9fce8d32b3f1006, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _WaveNormal:
         m_Texture: {fileID: 2800000, guid: 87d12dcddc034ff43b816b72a24da4a6, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -55,7 +59,10 @@ Material:
     - Vector4_6c569ad5102c4140a3fdb210fd0bd97e: {r: 1, g: 1, b: 0, a: 0}
     - _DepthColor: {r: 0.037379846, g: 0.3163966, b: 0.5283019, a: 0}
     - _ShallowColor: {r: 1, g: 1, b: 1, a: 0}
+    - _WaveAdditionalNormalParams01: {r: 1.7, g: 0.12, b: -0.05, a: 0.08}
+    - _WaveAdditionalNormalParams02: {r: 3.55, g: 0.24, b: 0.03, a: -0.06}
     - _WaveNormalAdditionalST01: {r: 2, g: 2, b: 0.08, a: -0.03}
     - _WaveNormalAdditionalST02: {r: 1.5, g: 1.5, b: -0.1, a: 0.08}
+    - _WaveNormalParams: {r: 1.84, g: 0.12, b: 0.01, a: 0.02}
     - _WaveNormalST: {r: 3, g: 3, b: 0.1, a: -0.1}
   m_BuildTextureStacks: []

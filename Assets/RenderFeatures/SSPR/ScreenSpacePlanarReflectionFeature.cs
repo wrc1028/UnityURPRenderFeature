@@ -24,6 +24,7 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
         [SerializeField] internal float fadeAdjust = 0.95f;
     }
     private SSPRRenderPass ssprPass;
+    [SerializeField] private RenderPassEvent m_PassEvent = RenderPassEvent.AfterRenderingSkybox;
     [SerializeField] private ScreenSpacePlanarReflectionSettings m_settings = new ScreenSpacePlanarReflectionSettings();
     public override void Create()
     {
@@ -48,8 +49,6 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
         private ProfilingSampler m_ProfilerSampler = new ProfilingSampler(k_ProfilerTag);
         private const string k_SSPRParam1Id = "_SSPRParam1";
         private const string k_SSPRParam2Id = "_SSPRParam2";
-        private const string k_ViewProjectionMatrixId = "_ViewProjectionMatrix";
-        private const string k_InverseViewProjectionMatrix = "_InverseViewProjectionMatrix";
         private const string k_SSPRBuffer = "_SSPRBuffer";
         private const string k_SSPRTextureResult = "_SSPRTextureResult";
 #if UNITY_IOS
@@ -67,8 +66,6 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
             public int height;
             public Vector4 param01;
             public Vector4 param02;
-            public Matrix4x4 viewProjectionMatrix;
-            public Matrix4x4 inverseViewProjectionMatrix;
             
             public int ClearKernelHandle;
             public int SSPRKernelHandle;
@@ -79,6 +76,7 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
         }
         private DispatchDatas m_DispatchDatas;
         private ScreenSpacePlanarReflectionSettings m_Settings;
+        private ScreenSpacePlanarReflectionVolume m_SSPRVolume;
         public SSPRRenderPass(ScreenSpacePlanarReflectionSettings settings)
         {
             renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
@@ -94,6 +92,11 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             SetSSPRDispatchDatas(renderingData, ref m_DispatchDatas);
+            m_SSPRVolume = VolumeManager.instance.stack.GetComponent<ScreenSpacePlanarReflectionVolume>();
+            if (m_SSPRVolume != null)
+            {
+                m_DispatchDatas.param01.z = m_SSPRVolume.waterHeight.value;
+            }
             int width = (int)m_DispatchDatas.param01.x;
             int height = (int)m_DispatchDatas.param01.y;
 #if UNITY_IOS
@@ -103,7 +106,6 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
             m_SSPRTextureBufferDescriptor.enableRandomWrite = true;
 #endif
             m_SSPRTextureResultDescriptor = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32);
-            
             m_SSPRTextureResultDescriptor.enableRandomWrite = true;
 
             m_SSPRTextureBufferHandle.Init(k_SSPRBuffer);
@@ -121,8 +123,6 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
             {
                 cmd.SetComputeVectorParam(m_Settings.computeShader, k_SSPRParam1Id, m_DispatchDatas.param01);
                 cmd.SetComputeVectorParam(m_Settings.computeShader, k_SSPRParam2Id, m_DispatchDatas.param02);
-                cmd.SetComputeMatrixParam(m_Settings.computeShader, k_ViewProjectionMatrixId, m_DispatchDatas.viewProjectionMatrix);
-                cmd.SetComputeMatrixParam(m_Settings.computeShader, k_InverseViewProjectionMatrix, m_DispatchDatas.inverseViewProjectionMatrix);
                 // Clear
 #if UNITY_IOS
                 cmd.SetComputeBufferParam(m_Settings.computeShader, m_DispatchDatas.ClearKernelHandle, k_SSPRBuffer, m_SSPRBuffer); 
@@ -178,10 +178,6 @@ public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
             cameraDirX *= 0.00001f;
             data.param02.z = cameraDirX;
             data.param02.w = m_Settings.fadeAdjust;
-
-            Matrix4x4 viewProjectionMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix, true) * camera.worldToCameraMatrix;
-            data.viewProjectionMatrix = viewProjectionMatrix;
-            data.inverseViewProjectionMatrix = viewProjectionMatrix.inverse;
             
             data.threadGroupsX = Mathf.CeilToInt(data.param01.x / 8f);
             data.threadGroupsY = Mathf.CeilToInt(data.param01.y / 8f);

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: ScreenSpacePlanarReflection
   m_EditorClassIdentifier: 
   m_Active: 1
+  m_PassEvent: 400
   m_settings:
     computeShader: {fileID: 7200000, guid: 6c660a88628feda4697900e7c5b2a03e, type: 3}
     waterHeight: 0
