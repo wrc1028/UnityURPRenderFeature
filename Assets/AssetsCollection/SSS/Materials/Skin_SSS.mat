@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Skin_SSS
-  m_Shader: {fileID: -6465566751694194690, guid: 73a5c243004b4904fa54c7c7c015515d, type: 3}
+  m_Shader: {fileID: 4800000, guid: dc82aa6ea653fb144a589f7284620f23, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -59,7 +59,7 @@ Material:
     - _SSS: 0
     - _SSSRange: 0
     - _Scale: 2.05
-    - _SmoothnessAdjust: 0.502
+    - _SmoothnessAdjust: 0.5
     m_Colors:
     - _SSSColor: {r: 0.9811321, g: 0.124955505, b: 0.124955505, a: 0}
   m_BuildTextureStacks: []

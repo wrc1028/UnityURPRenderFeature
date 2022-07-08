@@ -33,17 +33,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b3d386ba5cd94485973aee1479b272e, type: 3}
   m_Name: RenderObjects
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   settings:
-    passTag: NewRenderObjects
+    passTag: RenderObjects
     Event: 550
     filterSettings:
       RenderQueueType: 0
       LayerMask:
         serializedVersion: 2
         m_Bits: 2147483648
-      PassNames: []
-    overrideMaterial: {fileID: 2100000, guid: 93300922f2f4c674d944d3f60e8d699e, type: 2}
+      PassNames:
+      - SkinDiffuse
+    overrideMaterial: {fileID: 0}
     overrideMaterialPassIndex: 0
     overrideDepthState: 0
     depthCompareFunction: 4
@@ -118,10 +119,20 @@ MonoBehaviour:
   m_Name: ScreenSpaceSubsurfaceScattingFeature
   m_EditorClassIdentifier: 
   m_Active: 0
-  m_Event: 550
-  m_Settings:
-    skinSSSLayerMask:
+  m_RenderPassEvent: 550
+  m_RenderSkinSettings:
+    skinLayerMask:
       serializedVersion: 2
       m_Bits: 2147483648
-    diffuseMaterial: {fileID: 2100000, guid: 93300922f2f4c674d944d3f60e8d699e, type: 2}
-    blendMaterial: {fileID: 2100000, guid: 83554bd36cb0c924b9713d7157381693, type: 2}
+    skinLightMode: SkinDiffuse
+  m_BlurSkinRTSettings:
+    shallowRadius: 0
+    shallowColor: {r: 0.8018868, g: 0.5908401, b: 0.23829654, a: 1}
+    midRadius: 3.37
+    midColor: {r: 0.7264151, g: 0.29752815, b: 0.18845676, a: 1}
+    deepRadius: 8
+    deepColor: {r: 0.8207547, g: 0.04582638, b: 0, a: 1}
+  m_BlendSkinSettings:
+    shallowStrength: 0
+    midStrength: 0
+    deepStrength: 0.436
