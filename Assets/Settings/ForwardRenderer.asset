@@ -118,7 +118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b904ef01204b65040b3c2aead199ea4f, type: 3}
   m_Name: ScreenSpaceSubsurfaceScattingFeature
   m_EditorClassIdentifier: 
-  m_Active: 0
+  m_Active: 1
   m_RenderPassEvent: 550
   m_RenderSkinSettings:
     skinLayerMask:
@@ -126,13 +126,13 @@ MonoBehaviour:
       m_Bits: 2147483648
     skinLightMode: SkinDiffuse
   m_BlurSkinRTSettings:
-    shallowRadius: 0
-    shallowColor: {r: 0.8018868, g: 0.5908401, b: 0.23829654, a: 1}
-    midRadius: 3.37
-    midColor: {r: 0.7264151, g: 0.29752815, b: 0.18845676, a: 1}
-    deepRadius: 8
-    deepColor: {r: 0.8207547, g: 0.04582638, b: 0, a: 1}
+    shallowRadius: 2
+    shallowColor: {r: 0, g: 0.17842007, b: 1, a: 1}
+    midRadius: 4
+    midColor: {r: 0.023119736, g: 0.972549, b: 0.0039215647, a: 1}
+    deepRadius: 6
+    deepColor: {r: 1, g: 0, b: 0, a: 1}
   m_BlendSkinSettings:
-    shallowStrength: 0
-    midStrength: 0
-    deepStrength: 0.436
+    shallowStrength: 0.028
+    midStrength: 0.051
+    deepStrength: 0.216

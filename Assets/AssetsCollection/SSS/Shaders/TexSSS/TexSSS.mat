@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Skin
-  m_Shader: {fileID: 4800000, guid: dc82aa6ea653fb144a589f7284620f23, type: 3}
+  m_Name: TexSSS
+  m_Shader: {fileID: -6465566751694194690, guid: dc69bbfb39aa2404797d1156773eeb87, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -19,24 +19,20 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: bacacc4f1ee204648b8ba0d4d4e1ac16, type: 3}
+    - Texture2D_5c95b31c32a6406b96066e84862edcf9:
+        m_Texture: {fileID: 2800000, guid: f56b3aac1dddcec45aff484c956075ef, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _MSOMap:
-        m_Texture: {fileID: 2800000, guid: e74b78fede3a9fe4f9bd8352afe064b4, type: 3}
+    - Texture2D_cf6a4ffa13694ce79b9693e953f1d43b:
+        m_Texture: {fileID: 2800000, guid: 65e7d2c0e55fafb4bb08d5c6d342d921, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _NormalMap:
-        m_Texture: {fileID: 2800000, guid: 2fa796a100937ff4e93b081a3c648e1b, type: 3}
+    - _DiffuseTex:
+        m_Texture: {fileID: 2800000, guid: c7ba1cd276c6e03459a739250ef99344, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _ThicknessMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _ThicknessTex:
-        m_Texture: {fileID: 2800000, guid: cdf6297eb5fdffa4c8fb75ac85b606bd, type: 3}
+    - _PBRTex:
+        m_Texture: {fileID: 2800000, guid: 61778acefe1a53249b380485a58e0234, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -52,14 +48,8 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _AOAdjust: 1
-    - _Disortion: 0.1
-    - _MetallicAdjust: 1
-    - _Power: 0.6
-    - _SSS: 1
-    - _SSSRange: 0
-    - _Scale: 22.5
-    - _SmoothnessAdjust: 0.693
+    - _Radius_1: 1
     m_Colors:
-    - _SSSColor: {r: 0.5566038, g: 0.05513528, b: 0.1433938, a: 0}
+    - _Falloff_1: {r: 0.05660379, g: 0, b: 0, a: 0}
+    - _Falloff_2: {r: 0.0754717, g: 0.0024919915, b: 0.0024919915, a: 0}
   m_BuildTextureStacks: []

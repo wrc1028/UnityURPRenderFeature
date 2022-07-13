@@ -455,8 +455,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -490.0,
-            "y": 143.0,
+            "x": -490.0000305175781,
+            "y": 126.0000228881836,
             "width": 111.0,
             "height": 34.0
         }
@@ -655,7 +655,7 @@
     "m_ShaderOutputName": "B",
     "m_StageCapability": 3,
     "m_Value": {
-        "x": 0.00009999999747378752,
+        "x": 0.0,
         "y": 0.0,
         "z": 0.0,
         "w": 0.0

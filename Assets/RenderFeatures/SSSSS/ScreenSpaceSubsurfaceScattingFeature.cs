@@ -38,7 +38,8 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
     [SerializeField] private BlurSkinRTSettings m_BlurSkinRTSettings = new BlurSkinRTSettings();
     [SerializeField] private BlendSkinSettings m_BlendSkinSettings = new BlendSkinSettings();
 
-    private RenderTargetHandle m_SkinTargetHandle;
+    private RenderTargetHandle m_SkinColorTargetHandle;
+    private RenderTargetHandle m_SkinDepthTargetHandle;
 
     private RenderTargetHandle m_ShallowSkinTargetHandle;
     private RenderTargetHandle m_MidSkinTargetHandle;
@@ -50,8 +51,9 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
 
     public override void Create()
     {
-        m_SkinTargetHandle.Init("_SkinDiffuseTexture");
-        m_RenderSkinPass = new RenderSkinPass(m_RenderPassEvent, m_RenderSkinSettings, m_SkinTargetHandle);
+        m_SkinColorTargetHandle.Init("_SkinDiffuseTexture");
+        m_SkinDepthTargetHandle.Init("_SkinDepthTexture");
+        m_RenderSkinPass = new RenderSkinPass(m_RenderPassEvent, m_RenderSkinSettings, m_SkinColorTargetHandle, m_SkinDepthTargetHandle);
         
         m_ShallowSkinTargetHandle.Init("_ShallowSkinDiffuseTexture");
         m_MidSkinTargetHandle.Init("_MidSkinDiffuseTexture");
@@ -70,6 +72,7 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
         m_BlurSkinRTPass.Setup(renderer.cameraColorTarget);
         renderer.EnqueuePass(m_BlurSkinRTPass);
     }
+
     // 使用漫反射着色器渲染皮肤层
     class RenderSkinPass : ScriptableRenderPass
     {
@@ -77,9 +80,11 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
         private FilteringSettings m_FilteringSettings;
         private List<ShaderTagId> m_SkinShaderTagIdList = new List<ShaderTagId>();
 
-        private RenderTargetHandle m_SkinTargetHandle;
+        private RenderTargetHandle m_SkinColorTargetHandle;
+        private RenderTargetHandle m_SkinDepthTargetHandle;
         private RenderTextureDescriptor m_SkinTargetDescriptor;
-        public RenderSkinPass(RenderPassEvent renderPassEvent, RenderSkinSettings settings, RenderTargetHandle skinTargetHandle)
+        private RenderTextureDescriptor m_DepthTargetDescriptor;
+        public RenderSkinPass(RenderPassEvent renderPassEvent, RenderSkinSettings settings, RenderTargetHandle skinTargetHandle, RenderTargetHandle depthTargetHandle)
         {
             base.profilingSampler = new ProfilingSampler(nameof(RenderSkinPass));
             this.renderPassEvent = renderPassEvent;
@@ -94,14 +99,17 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
                 m_SkinShaderTagIdList.Add(new ShaderTagId("UniversalForwardOnly"));
                 m_SkinShaderTagIdList.Add(new ShaderTagId("LightweightForward"));
             }
-            m_SkinTargetHandle = skinTargetHandle;
+            m_SkinColorTargetHandle = skinTargetHandle;
+            m_SkinDepthTargetHandle = depthTargetHandle;
         }
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             m_SkinTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
             m_SkinTargetDescriptor.msaaSamples = 1;
-            cmd.GetTemporaryRT(m_SkinTargetHandle.id, m_SkinTargetDescriptor);
-            ConfigureTarget(m_SkinTargetHandle.Identifier());
+            m_DepthTargetDescriptor = new RenderTextureDescriptor(m_SkinTargetDescriptor.width, m_SkinTargetDescriptor.height, RenderTextureFormat.Depth, m_SkinTargetDescriptor.depthBufferBits);
+            cmd.GetTemporaryRT(m_SkinColorTargetHandle.id, m_SkinTargetDescriptor);
+            cmd.GetTemporaryRT(m_SkinDepthTargetHandle.id, m_DepthTargetDescriptor);
+            ConfigureTarget(m_SkinColorTargetHandle.Identifier(), m_SkinDepthTargetHandle.Identifier());
             ConfigureClear(ClearFlag.All, Color.black);
         }
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -120,7 +128,7 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
         }
         public override void OnCameraCleanup(CommandBuffer cmd)
         {
-            cmd.ReleaseTemporaryRT(m_SkinTargetHandle.id);
+            cmd.ReleaseTemporaryRT(m_SkinColorTargetHandle.id);
         }
     }
     // 根据扩散剖面和深度模糊皮肤RT
@@ -131,13 +139,17 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
         private RenderTargetHandle m_ShallowSkinTargetHandle;
         private RenderTargetHandle m_MidSkinTargetHandle;
         private RenderTargetHandle m_DeepSkinTargetHandle;
-        private RenderTargetIdentifier m_CurrentColorTarget;
+        private RenderTargetHandle m_TempTargetHandle;
+        private RenderTargetHandle m_CurrentColorTarget;
         private RenderTextureDescriptor m_ShallowSkinDescriptor;
         private RenderTextureDescriptor m_MidSkinDescriptor;
         private RenderTextureDescriptor m_DeepSkinDescriptor;
+        private RenderTextureDescriptor m_TempDescriptor;
 
         private BlurSkinRTSettings m_BlurSkinRTSettings;
         private BlendSkinSettings m_BlendSkinSettings;
+
+        private List<Vector4> kernels = new List<Vector4>();
 
         public BlurSkinRTPass(RenderPassEvent renderPassEvent, BlurSkinRTSettings settings, BlendSkinSettings blendSkinSettings, 
             RenderTargetHandle shallowTargetHandle, RenderTargetHandle midTargetHandle, RenderTargetHandle deepTargetHandle)
@@ -151,10 +163,11 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
             m_ShallowSkinTargetHandle = shallowTargetHandle;
             m_MidSkinTargetHandle = midTargetHandle;
             m_DeepSkinTargetHandle = deepTargetHandle;
+            m_TempTargetHandle.Init("_TempRenderTarget");
         }
         public void Setup(RenderTargetIdentifier currentColorTarget)
         {
-            m_CurrentColorTarget = currentColorTarget;
+            m_CurrentColorTarget = new RenderTargetHandle(currentColorTarget);
         }
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
@@ -165,12 +178,14 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
             // m_MidSkinDescriptor.width /= 2;
             // m_MidSkinDescriptor.height /= 2;
             m_DeepSkinDescriptor = m_ShallowSkinDescriptor;
-            // m_DeepSkinDescriptor.width /= 4;
-            // m_DeepSkinDescriptor.height /= 4;
+            m_DeepSkinDescriptor.width /= 4;
+            m_DeepSkinDescriptor.height /= 4;
+            m_TempDescriptor = renderingData.cameraData.cameraTargetDescriptor;
 
             cmd.GetTemporaryRT(m_ShallowSkinTargetHandle.id, m_ShallowSkinDescriptor);
             cmd.GetTemporaryRT(m_MidSkinTargetHandle.id, m_MidSkinDescriptor);
             cmd.GetTemporaryRT(m_DeepSkinTargetHandle.id, m_DeepSkinDescriptor);
+            cmd.GetTemporaryRT(m_TempTargetHandle.id, m_TempDescriptor);
         }
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -180,6 +195,7 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
             {
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
+                cmd.Blit(m_CurrentColorTarget.Identifier(), m_TempTargetHandle.Identifier());
                 cmd.SetGlobalFloat("_BlurRadius", m_BlurSkinRTSettings.shallowRadius);
                 cmd.SetGlobalColor("_SkinColor", m_BlurSkinRTSettings.shallowColor);
                 cmd.Blit(null, m_ShallowSkinTargetHandle.Identifier(), m_BlurSkinRTSettings.blurMaterial, m_BlurSkinRTSettings.blurPassIndex);
@@ -191,9 +207,18 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
                 cmd.Blit(null, m_DeepSkinTargetHandle.Identifier(), m_BlurSkinRTSettings.blurMaterial, m_BlurSkinRTSettings.blurPassIndex);
 
                 cmd.SetGlobalFloat("_ShallowStrength", m_BlendSkinSettings.shallowStrength);
-                cmd.SetGlobalFloat("_Midtrength", m_BlendSkinSettings.midStrength);
+                cmd.SetGlobalFloat("_MidStrength", m_BlendSkinSettings.midStrength);
                 cmd.SetGlobalFloat("_DeepStrength", m_BlendSkinSettings.deepStrength);
-                cmd.Blit(null, m_CurrentColorTarget, m_BlurSkinRTSettings.blurMaterial, 1);
+                
+                // Vector3 SSSC = Vector3.Normalize(new Vector3(m_BlurSkinRTSettings.shallowColor.r, m_BlurSkinRTSettings.shallowColor.g, m_BlurSkinRTSettings.shallowColor.b));
+                // Vector3 SSSFC = Vector3.Normalize(new Vector3(m_BlurSkinRTSettings.midColor.r, m_BlurSkinRTSettings.midColor.g, m_BlurSkinRTSettings.midColor.b));
+                // SeparableSSS.CalculateKernel(ref kernels, 25, SSSC, SSSFC);
+                // cmd.SetGlobalVectorArray("_Kernel", kernels);
+                // 
+                // cmd.Blit(null, m_ShallowSkinTargetHandle.Identifier(), m_BlurSkinRTSettings.blurMaterial, 2);
+                // cmd.Blit(null, m_MidSkinTargetHandle.Identifier(), m_BlurSkinRTSettings.blurMaterial, 3);
+
+                cmd.Blit(m_TempTargetHandle.Identifier(), m_CurrentColorTarget.Identifier(), m_BlurSkinRTSettings.blurMaterial, 1);
             }
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
@@ -204,6 +229,7 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
             cmd.ReleaseTemporaryRT(m_ShallowSkinTargetHandle.id);
             cmd.ReleaseTemporaryRT(m_MidSkinTargetHandle.id);
             cmd.ReleaseTemporaryRT(m_DeepSkinTargetHandle.id);
+            cmd.ReleaseTemporaryRT(m_TempTargetHandle.id);
         }
     }
 }

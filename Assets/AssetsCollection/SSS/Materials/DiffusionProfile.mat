@@ -34,7 +34,12 @@ Material:
     m_Floats:
     - Vector1_e171976f38464b3d9cb80432b8966436: 1
     - Vector1_e7d2ed7bd166463597a17f739b6e25f3: 0.02
-    - _AdjustRadius: 16
+    - _AdjustRadius: 13.1
     m_Colors:
-    - _Falloff: {r: 1, g: 0.39525694, b: 0, a: 1}
+    - _Falloff: {r: 0.233, g: 0.455, b: 0.649, a: 1}
+    - _Falloff_1: {r: 0.5566038, g: 0.15845184, b: 0.08139017, a: 0}
+    - _Falloff_2: {r: 0.11799998, g: 0.19799995, b: 0, a: 0}
+    - _Falloff_3: {r: 0.113, g: 0.007, b: 0.007, a: 0}
+    - _Falloff_4: {r: 0.358, g: 0.004, b: 0, a: 0}
+    - _Falloff_5: {r: 0.078, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -14,14 +14,22 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
     float4 _SkinColor;
     float _BlurRadius;
     TEXTURE2D_X(_CameraDepthTexture);
+    TEXTURE2D_X(_SkinDepthTexture);
 
     TEXTURE2D_X(_SourceTex);
     TEXTURE2D_X(_ShallowSkinDiffuseTexture);
     TEXTURE2D_X(_MidSkinDiffuseTexture);
     TEXTURE2D_X(_DeepSkinDiffuseTexture);
     float _ShallowStrength;
-    float _Midtrength;
+    float _MidStrength;
     float _DeepStrength;
+
+    /// SSSS
+    #define DistacneToProjectionWindow 5.671281819617709
+    #define DPTimes 1701.384545885313
+    #define SamplerSteps 25
+    uniform float4 _Kernel[SamplerSteps];
+    
 
     #define SQRT2 1.41421356
 
@@ -41,11 +49,10 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
 
     half4 DiffusionProfile(half radius, half4 skinColor)
     {
-        return 0.100 * GaussianColor(0.0484, radius, skinColor) + 
-               0.118 * GaussianColor(0.1870, radius, skinColor) + 
-               0.113 * GaussianColor(0.5470, radius, skinColor) + 
-               0.358 * GaussianColor(1.9900, radius, skinColor) + 
-               0.078 * GaussianColor(7.4100, radius, skinColor);
+        return 0.07 * GaussianColor(0.036, radius, skinColor) + 
+               0.18 * GaussianColor(0.140, radius, skinColor) + 
+               0.21 * GaussianColor(0.910, radius, skinColor) + 
+               0.29 * GaussianColor(7.000, radius, skinColor);
     }
 
     half4 BlurFragment(Varyings input) : SV_Target
@@ -54,6 +61,9 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
         float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
         half4 originColor = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv);
         if ((originColor.r + originColor.g + originColor.b) == 0) return 0;
+        float linearOriginDepth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_LinearClamp, uv).r;
+        float linearSkinDepth = SAMPLE_DEPTH_TEXTURE(_SkinDepthTexture, sampler_LinearClamp, uv).r;
+        if (abs(linearOriginDepth - linearSkinDepth) > 0.00001) return 0;
 
         float2 blurOffset = _SkinDiffuseTexture_TexelSize.xy * _BlurRadius;
         half4 originDiffusionProfile = DiffusionProfile(0, _SkinColor);
@@ -69,7 +79,7 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
         half4 c5 = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv + float2(1, 1) * blurOffset);
         half4 c6 = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv + float2(1,-1) * blurOffset);
         half4 c7 = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv - float2(1, 1) * blurOffset);
-        half4 resultColor = originColor * originDiffusionProfile + (c0 + c1 + c2 + c3) * secondDiffusionProfile + (c4 + c5 + c6 + c7) * thirdDiffusionProfile;
+        half4 resultColor = originColor * 0 + (c0 + c1 + c2 + c3) * secondDiffusionProfile + (c4 + c5 + c6 + c7) * thirdDiffusionProfile;
         return resultColor;
     }
 
@@ -79,11 +89,57 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
         float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
         half4 baseColor = SAMPLE_TEXTURE2D_X(_SourceTex, sampler_LinearClamp, uv);
         half4 shallowColor = SAMPLE_TEXTURE2D_X(_ShallowSkinDiffuseTexture, sampler_LinearClamp, uv) * _ShallowStrength;
-        half4 midColor = SAMPLE_TEXTURE2D_X(_MidSkinDiffuseTexture, sampler_LinearClamp, uv) * _Midtrength;
+        half4 midColor = SAMPLE_TEXTURE2D_X(_MidSkinDiffuseTexture, sampler_LinearClamp, uv) * _MidStrength;
         half4 deepColor = SAMPLE_TEXTURE2D_X(_DeepSkinDiffuseTexture, sampler_LinearClamp, uv) * _DeepStrength;
+        // half4 sssColor = midColor * half4(0.1, 0.336, 0.344, 1);
+        // sssColor += midColor * half4(0.118, 0.198, 0, 1);
+        // sssColor += midColor * half4(0.113, 0.007, 0.007, 1);
+        // sssColor += deepColor * half4(0.358, 0.004, 0, 1);
+        // sssColor += deepColor * half4(0.078, 0, 0, 1);
+        // return baseColor + shallowColor * half4(0.233, 0.455, 0.649, 1) + midColor * half4(0.1, 0.336, 0.344, 1) + midColor * half4(0.118, 0.198, 0, 1) + deepColor * half4(0.113, 0.007, 0.007, 1) + deepColor * half4(0.358, 0.004, 0, 1) + deepColor * half4(0.078, 0, 0, 1);
+        // return baseColor + shallowColor + midColor + deepColor;
         return baseColor + shallowColor + midColor + deepColor;
     }
 
+    float4 SSS(float2 UV, float2 SSSIntencity)
+    {
+        half4 sceneColor = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, UV);
+        if ((sceneColor.r + sceneColor.g + sceneColor.b) == 0) return 0;
+        float linearOriginDepth = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_LinearClamp, UV), _ZBufferParams);
+        float blurLength = DistacneToProjectionWindow / linearOriginDepth;
+        float2 UVOffset = SSSIntencity * blurLength;
+        float4 blurSceneColor = sceneColor;
+        blurSceneColor.rgb *= _Kernel[0].rgb;
+        [loop]
+        for (int i = 1; i < SamplerSteps; i ++)
+        {
+            float2 SSSUV = UV + _Kernel[i].a * UVOffset;
+            float4 SSSSceneColor = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, SSSUV);
+            float SSSDepth = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_LinearClamp, SSSUV), _ZBufferParams);
+            float SSSScale = saturate(DPTimes * SSSIntencity * abs(linearOriginDepth - SSSDepth));
+            SSSSceneColor.rgb *= lerp(SSSSceneColor.rgb, sceneColor.rgb, SSSScale);
+            blurSceneColor.rgb += _Kernel[i].rgb * SSSSceneColor.rgb;
+        }
+        return blurSceneColor;
+    }
+
+    float4 BlurXFragment(Varyings input) : SV_Target
+    {
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+        float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
+        float SSSIntencity = _BlurRadius * _SkinDiffuseTexture_TexelSize.x;
+        float4 blurColor = SSS(uv, float2(SSSIntencity, 0));
+        return blurColor;
+    }
+
+    float4 BlurYFragment(Varyings input) : SV_Target
+    {
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+        float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
+        float SSSIntencity = _BlurRadius * _SkinDiffuseTexture_TexelSize.y;
+        float4 blurColor = SSS(uv, float2(0, SSSIntencity));
+        return blurColor;
+    }
     ENDHLSL
 
     // Properties
@@ -116,6 +172,26 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
             HLSLPROGRAM
             #pragma vertex FullscreenVert
             #pragma fragment BlendFragment
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Blur X"
+
+            HLSLPROGRAM
+            #pragma vertex FullscreenVert
+            #pragma fragment BlurXFragment
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "Blur Y"
+
+            HLSLPROGRAM
+            #pragma vertex FullscreenVert
+            #pragma fragment BlurYFragment
             ENDHLSL
         }
     }

@@ -24,7 +24,6 @@ public class ZoomBlurRenderFeature : ScriptableRendererFeature
         // 用于创建渲染目标的结构体
         private RenderTargetHandle m_TempTarget;
         private RenderTargetHandle m_CurrentTarget;
-        private RenderTargetIdentifier a;
         public ZoomBlurRenderPass(RenderPassEvent evt)
         {
             renderPassEvent = evt;
