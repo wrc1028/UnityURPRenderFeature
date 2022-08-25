@@ -69,9 +69,9 @@ uint2 Decode(uint encode)
 [numthreads(8, 8, 1)]
 void SSPR (uint3 id : SV_DispatchThreadID)
 {
-    half2 screenUV = (id.xy + 0.5) * _TextureSize.xy;
+    half2 screenUV = id.xy * _TextureSize.xy;
     half sampleDepth = _CameraDepthTexture[id.xy * _SampleOffset].r;
-    if (Linear01Depth(sampleDepth, _ZBufferParams) > 0.95) return;
+    if (Linear01Depth(sampleDepth, _ZBufferParams) > 0.9) return;
     
     float3 positionWS = GetWorldPositionFromDepth(sampleDepth, screenUV);
     if (positionWS.y > _WaterHeight)
@@ -138,8 +138,7 @@ void FillHole (uint3 id : SV_DispatchThreadID)
         encodeCurrentID = targetEncodeID;
     }
 
-    half2 uv = (decodeCurrentID + 0.5) * _TextureSize.xy;
-    half4 reflectionColor = _CameraOpaqueTexture.SampleLevel(linearClampSampler, uv, 0);
+    half4 reflectionColor = _CameraOpaqueTexture[decodeCurrentID * _SampleOffset];
     half alpha = smoothstep(1, _FadeAdjust, decodeCurrentID.y * _TextureSize.y);
 #if UNITY_UV_STARTS_AT_TOP
     _SSPRTextureResult[id.xy] = encodeCurrentID == MAXUINT ? 0 : half4(reflectionColor.rgb, alpha);

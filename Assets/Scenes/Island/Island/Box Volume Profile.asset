@@ -60,7 +60,7 @@ MonoBehaviour:
     m_Value: 10
   maximumCount:
     m_OverrideState: 0
-    m_Value: 1
+    m_Value: 2
     min: 0
     max: 4
   reflectionPlanes:

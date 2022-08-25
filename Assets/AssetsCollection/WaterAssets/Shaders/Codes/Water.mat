@@ -9,9 +9,9 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Water
   m_Shader: {fileID: 4800000, guid: 03eb825dcb62ab843aae54ae998d7b2f, type: 3}
-  m_ShaderKeywords: 
+  m_ShaderKeywords: _QUALITY_GRADE_HIGH
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -24,7 +24,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EnvCubeMap:
-        m_Texture: {fileID: 8900000, guid: 2d578ac69b0c70f43990cd0155dc86eb, type: 3}
+        m_Texture: {fileID: 8900000, guid: d838c114c74cab741bfc7aaf74e3c8c7, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _FoamTex:
@@ -48,10 +48,42 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - _AdditionalNormalFlowX: -0.5
+    - _AdditionalNormalFlowY: -0.15
+    - _AdditionalNormalSize: 12
+    - _AdditionalNormalStrength: 0.6
+    - _BaseNormalFlowX: -0.3
+    - _BaseNormalFlowY: 0.25
+    - _BaseNormalSize: 3
+    - _BaseNormalStrength: 0.7
+    - _CausticsDistorted: 0.09
+    - _CausticsIntensity: 1
+    - _CausticsMaxVisibleDepth: 2
+    - _CausticsSize: 4.13
     - _DepthAdjust: 1
+    - _DiffuseIntensity: 0.203
+    - _FoamDistorted: 0.11
+    - _FoamIntensity: 0.51
+    - _FoamSize: 5
+    - _FoamWidth: 10
+    - _FresnelFactor: 6
     - _MaxVisibleDepth: 3
-    - _ShallowDepthAdjust: 0.3
+    - _NormalAttenDst: 70
+    - _NormalDistorted: 3
+    - _ReflectionDistorted: 2
+    - _ReflectionIntensity: 0.6
+    - _RefractionIntensity: 1
+    - _ScreenDistorted: 4.23
+    - _ShallowDepthAdjust: 0.202
     - _ShallowMaxDepth: 0.5
+    - _WaveAmplitude: 0.3
+    - _WaveCount: 5
+    - _WaveFlowSpeed: 0.6
+    - _WaveFoamIntensity: 1
+    - _WaveFoamNormalStrength: 0.1
+    - _WaveLength: 1.5
+    - _WaveRandomSeed: 43216.83
+    - _Waveamplitude: 0.2
     m_Colors:
     - _CausticsParams: {r: 0.76, g: 1.5, b: 0.42, a: 5.13}
     - _Color: {r: 0, g: 0, b: 1, a: 1}
@@ -59,7 +91,7 @@ Material:
     - _FoamParams: {r: 20, g: 8.17, b: 0.63, a: 7.02}
     - _NoiseParams: {r: 1, g: 1, b: 1, a: 1}
     - _ReflectionColor: {r: 0.8066038, g: 0.99704736, b: 1, a: 1}
-    - _ShallowColor: {r: 0.40784317, g: 0.8930735, b: 0.93333334, a: 1}
+    - _ShallowColor: {r: 0, g: 0.7830189, b: 0.6886792, a: 1}
     - _WaveParams01: {r: 3, g: 1, b: 0.06, a: -0.07}
     - _WaveParams02: {r: 3, g: 0.2, b: -0.04, a: 0.09}
     - _WaveParams03: {r: 6, g: 0.3, b: 0.04, a: -0.17}

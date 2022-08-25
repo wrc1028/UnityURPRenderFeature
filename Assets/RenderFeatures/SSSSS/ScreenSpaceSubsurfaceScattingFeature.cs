@@ -196,6 +196,7 @@ public class ScreenSpaceSubsurfaceScattingFeature : ScriptableRendererFeature
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
                 cmd.Blit(m_CurrentColorTarget.Identifier(), m_TempTargetHandle.Identifier());
+                cmd.SetGlobalTexture("_SourceTex", m_TempTargetHandle.Identifier());
                 cmd.SetGlobalFloat("_BlurRadius", m_BlurSkinRTSettings.shallowRadius);
                 cmd.SetGlobalColor("_SkinColor", m_BlurSkinRTSettings.shallowColor);
                 cmd.Blit(null, m_ShallowSkinTargetHandle.Identifier(), m_BlurSkinRTSettings.blurMaterial, m_BlurSkinRTSettings.blurPassIndex);

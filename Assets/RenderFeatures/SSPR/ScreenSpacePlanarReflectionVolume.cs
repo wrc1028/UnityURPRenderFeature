@@ -9,6 +9,7 @@ public class ScreenSpacePlanarReflectionVolume : VolumeComponent, IPostProcessCo
     [Tooltip("最大支持反射平面数量")]
     public ClampedIntParameter maximumCount = new ClampedIntParameter(1, 0, 4);
     public GameObject[] reflectionPlanes = new GameObject[4];
+    // public ObjectParameter<GameObject> waterPlane = new ObjectParameter<GameObject>(null);
     public bool IsActive() => active;
     public bool IsTileCompatible() => false;
 }

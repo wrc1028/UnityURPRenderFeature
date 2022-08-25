@@ -71,6 +71,14 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
         half4 secondDiffusionProfile = DiffusionProfile(secondRadius, _SkinColor);
         half thirdRadius = length(_SkinDiffuseTexture_TexelSize.xy * _BlurRadius) * SQRT2 * 16;
         half4 thirdDiffusionProfile = DiffusionProfile(thirdRadius, _SkinColor);
+        [loop]
+        for (int x = -2; x < 3; x++)
+        {
+            for (int y = -2; y < 3; y++)
+            {
+                
+            }
+        }
         half4 c0 = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv + float2(0, 1) * blurOffset);
         half4 c1 = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv - float2(0, 1) * blurOffset);
         half4 c2 = SAMPLE_TEXTURE2D_X(_SkinDiffuseTexture, sampler_LinearClamp, uv - float2(1, 0) * blurOffset);
@@ -91,6 +99,7 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
         half4 shallowColor = SAMPLE_TEXTURE2D_X(_ShallowSkinDiffuseTexture, sampler_LinearClamp, uv) * _ShallowStrength;
         half4 midColor = SAMPLE_TEXTURE2D_X(_MidSkinDiffuseTexture, sampler_LinearClamp, uv) * _MidStrength;
         half4 deepColor = SAMPLE_TEXTURE2D_X(_DeepSkinDiffuseTexture, sampler_LinearClamp, uv) * _DeepStrength;
+        half4 mask = (shallowColor.r + shallowColor.g + shallowColor.b) > 0.00001 ? 1 : 0;
         // half4 sssColor = midColor * half4(0.1, 0.336, 0.344, 1);
         // sssColor += midColor * half4(0.118, 0.198, 0, 1);
         // sssColor += midColor * half4(0.113, 0.007, 0.007, 1);
@@ -98,7 +107,7 @@ Shader "Hidden/Universal Render Pipeline/SSSSS"
         // sssColor += deepColor * half4(0.078, 0, 0, 1);
         // return baseColor + shallowColor * half4(0.233, 0.455, 0.649, 1) + midColor * half4(0.1, 0.336, 0.344, 1) + midColor * half4(0.118, 0.198, 0, 1) + deepColor * half4(0.113, 0.007, 0.007, 1) + deepColor * half4(0.358, 0.004, 0, 1) + deepColor * half4(0.078, 0, 0, 1);
         // return baseColor + shallowColor + midColor + deepColor;
-        return baseColor + shallowColor + midColor + deepColor;
+        return baseColor * mask * 0.8 + shallowColor + midColor + deepColor + (1 - mask) * baseColor;
     }
 
     float4 SSS(float2 UV, float2 SSSIntencity)

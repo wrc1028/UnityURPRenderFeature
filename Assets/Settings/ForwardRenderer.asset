@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5e237faf5badac429ddc3196eed0b4a, type: 3}
   m_Name: ScreenSpacePlanarReflection
   m_EditorClassIdentifier: 
-  m_Active: 0
-  m_PassEvent: 400
+  m_Active: 1
+  m_PassEvent: 450
   m_settings:
     computeShader: {fileID: 7200000, guid: 6c660a88628feda4697900e7c5b2a03e, type: 3}
     waterHeight: 0
@@ -21,6 +21,24 @@ MonoBehaviour:
     stretchIntensity: 65.1
     stretchThreshold: 0
     fadeAdjust: 0.95
+--- !u!114 &-1960220405483808969
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c20c862b475ee8f47aec1e7f28256114, type: 3}
+  m_Name: ScreenSpaceReflectionFeature
+  m_EditorClassIdentifier: 
+  m_Active: 0
+  m_PassEvent: 400
+  m_Settings:
+    computeShader: {fileID: 7200000, guid: 83e4bce4e763d984884cfd16f5e1b7f5, type: 3}
+    waterHeight: 0
+    textureSize: 1
 --- !u!114 &-559169896229148408
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77,7 +95,8 @@ MonoBehaviour:
   - {fileID: -8218162108146007127}
   - {fileID: 4270327604785259688}
   - {fileID: -559169896229148408}
-  m_RendererFeatureMap: a9c361b51a39f38da824c5d55440433b08692b26f16d3df8
+  - {fileID: -1960220405483808969}
+  m_RendererFeatureMap: a9c361b51a39f38da824c5d55440433b08692b26f16d3df83757aa49ede5cbe4
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
   shaders:
@@ -118,7 +137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b904ef01204b65040b3c2aead199ea4f, type: 3}
   m_Name: ScreenSpaceSubsurfaceScattingFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   m_RenderPassEvent: 550
   m_RenderSkinSettings:
     skinLayerMask:
@@ -126,13 +145,13 @@ MonoBehaviour:
       m_Bits: 2147483648
     skinLightMode: SkinDiffuse
   m_BlurSkinRTSettings:
-    shallowRadius: 2
-    shallowColor: {r: 0, g: 0.17842007, b: 1, a: 1}
-    midRadius: 4
-    midColor: {r: 0.023119736, g: 0.972549, b: 0.0039215647, a: 1}
-    deepRadius: 6
-    deepColor: {r: 1, g: 0, b: 0, a: 1}
+    shallowRadius: 1
+    shallowColor: {r: 0, g: 0.27053168, b: 0.49019608, a: 1}
+    midRadius: 1
+    midColor: {r: 0.3207547, g: 0.16957873, b: 0.14978638, a: 1}
+    deepRadius: 15
+    deepColor: {r: 0.745283, g: 0, b: 0, a: 1}
   m_BlendSkinSettings:
-    shallowStrength: 0.028
-    midStrength: 0.051
-    deepStrength: 0.216
+    shallowStrength: 0.076
+    midStrength: 0.082
+    deepStrength: 0.153

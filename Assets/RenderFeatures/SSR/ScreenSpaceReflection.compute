@@ -1,0 +1,86 @@
+#pragma kernel Clear
+#pragma kernel SSR
+#pragma kernel Depth
+
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Input.hlsl"
+
+SamplerState linearClampSampler;
+// input
+Texture2D<float4> _CameraDepthTexture;
+float4 _SSRParam;
+// define
+#define _TextureSize float4(1.0 / _SSRParam.x, 1.0 / _SSRParam.y, _SSRParam.xy)
+#define _WaterHeight _SSRParam.z
+#define _SampleOffset _SSRParam.w
+#define MAXUINT 0xFFFFFFFF
+// output
+RWTexture2D<uint> _SSRBuffer;
+#define INDEX(id) id
+RWTexture2D<float> _RayDepthTexture;
+
+[numthreads(8, 8, 1)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+#if UNITY_UV_STARTS_AT_TOP
+    _SSRBuffer[INDEX(id.xy)] = MAXUINT;
+#else
+    _SSRBuffer[INDEX(id.xy)] = 0;
+#endif
+}
+
+// 获得世界坐标
+float3 GetWorldPositionFromDepth(float depth, float2 uv)
+{
+#if UNITY_UV_STARTS_AT_TOP
+    uv.y = 1 - uv.y;
+#endif
+    float4 positionCS = float4(uv * 2.0 - 1.0, depth, 1);
+    float4 positionWS = mul(UNITY_MATRIX_I_VP, positionCS);
+    positionWS.xyz /= positionWS.w;
+    return positionWS.xyz;
+}
+// 编码
+uint Encode(uint2 id)
+{
+    return id.y << 16 | id.x;
+}
+// 解码
+uint2 Decode(uint encode)
+{
+    return uint2(encode & 0xFFFF, encode >> 16);
+}
+
+[numthreads(8, 8, 1)]
+void SSR (uint3 id : SV_DispatchThreadID)
+{
+    half2 screenUV = id.xy * _TextureSize.xy;
+    half sampleDepth = _CameraDepthTexture[id.xy * _SampleOffset].r;
+    if (Linear01Depth(sampleDepth, _ZBufferParams) > 0.9) return;
+    
+    float3 positionWS = GetWorldPositionFromDepth(sampleDepth, screenUV);
+    if (positionWS.y > _WaterHeight)
+    {
+        float4 positionRWS = float4(positionWS.x, 2 * _WaterHeight - positionWS.y, positionWS.z, 1);
+        float4 positionRCS = mul(UNITY_MATRIX_VP, positionRWS);
+        float4 positionSS = ComputeScreenPos(positionRCS);
+        float2 reflectUV = positionSS.xy / positionSS.w;
+        // limit min value
+        uint2 reflectID = uint2(reflectUV * _TextureSize.zw);
+        uint encodeID = Encode(id.xy);
+#if UNITY_UV_STARTS_AT_TOP
+        InterlockedMin(_SSRBuffer[INDEX(reflectID)], encodeID);
+#else
+        InterlockedMax(_SSRBuffer[INDEX(reflectID)], encodeID);
+#endif
+    }
+}
+
+[numthreads(8, 8, 1)]
+void Depth (uint3 id : SV_DispatchThreadID)
+{
+    uint encodeCurrentID = _SSRBuffer[INDEX(id.xy)];
+    uint2 decodeCurrentID = Decode(encodeCurrentID);
+    _RayDepthTexture[id.xy] = _CameraDepthTexture[decodeCurrentID * _SampleOffset];
+
+}

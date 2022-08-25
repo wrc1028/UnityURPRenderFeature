@@ -44,9 +44,9 @@ Material:
     - _FoamSpeed: 2
     - _FoamWidth: 8
     - _Max: 1
-    - _Min: 0.137
+    - _Min: 0.909
     - _Mulite: 10
-    - _NormalStrength: 100
+    - _NormalStrength: 99.8
     - _Offset: 1.52
     m_Colors: []
   m_BuildTextureStacks: []
